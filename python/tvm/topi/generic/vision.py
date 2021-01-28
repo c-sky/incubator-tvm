@@ -176,3 +176,20 @@ def schedule_proposal(outs):
       The computation schedule for the op.
     """
     return _default_schedule(outs, False)
+
+
+def schedule_hardmax(outs):
+    """Schedule for hardmax operator.
+
+    Parameters
+    ----------
+    outs: Array of Tensor
+      The computation graph description of hardmax
+      in the format of an array of tensors.
+
+    Returns
+    -------
+    s: Schedule
+      The computation schedule for the op.
+    """
+    return _default_schedule(outs, False)

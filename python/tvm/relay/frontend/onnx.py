@@ -1567,6 +1567,17 @@ class LogSoftmax(OnnxOpConverter):
         return x - m - _op.log(s)
 
 
+class Hardmax(OnnxOpConverter):
+    """Operator converter for Hardmax."""
+
+    @classmethod
+    def _impl_v1(cls, inputs, attr, params):
+        # set default value when axis is not set in the model
+        if "axis" not in attr:
+            attr["axis"] = -1
+        return AttrCvt("hardmax", transforms={"axis": ("axis", 1)})(inputs, attr, params)
+
+
 class OneHot(OnnxOpConverter):
     """Operator converter for OneHot."""
 
@@ -2786,7 +2797,7 @@ def _get_convert_map(opset):
         "Softmax": Softmax.get_converter(opset),
         "LogSoftmax": LogSoftmax.get_converter(opset),
         "OneHot": OneHot.get_converter(opset),
-        # 'Hardmax'
+        "Hardmax": Hardmax.get_converter(opset),
         "Softsign": Softsign.get_converter(opset),
         "Gemm": Gemm.get_converter(opset),
         "MatMul": MatMul.get_converter(opset),

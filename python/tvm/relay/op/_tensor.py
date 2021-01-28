@@ -21,7 +21,8 @@ from tvm.te.hybrid import script
 from tvm import topi
 from tvm.runtime import convert
 
-from .op import register_compute, register_shape_func
+from . import strategy
+from .op import register_compute, register_shape_func, register_strategy
 from .op import register_broadcast_schedule, register_injective_schedule
 from .op import register_pattern, OpPattern
 
@@ -282,3 +283,7 @@ register_shape_func("clip", False, elemwise_shape_func)
 register_shape_func("log2", False, elemwise_shape_func)
 register_shape_func("sigmoid", False, elemwise_shape_func)
 register_shape_func("tanh", False, elemwise_shape_func)
+
+# hardmax
+register_strategy("hardmax", strategy.hardmax_strategy)
+register_pattern("hardmax", OpPattern.OPAQUE)

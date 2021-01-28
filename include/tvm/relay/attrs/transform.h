@@ -466,6 +466,14 @@ struct UniqueAttrs : public tvm::AttrsNode<UniqueAttrs> {
   }
 };  // struct UniqueAttrs
 
+struct HardmaxAttrs : public tvm::AttrsNode<HardmaxAttrs> {
+  Integer axis;
+
+  TVM_DECLARE_ATTRS(HardmaxAttrs, "relay.attrs.HardmaxAttrs") {
+    TVM_ATTR_FIELD(axis).set_default(0).describe("The axis over which to select values.");
+  }
+};
+
 }  // namespace relay
 }  // namespace tvm
 #endif  // TVM_RELAY_ATTRS_TRANSFORM_H_
