@@ -527,5 +527,25 @@ RELAY_REGISTER_UNARY_OP("isinf")
     .add_type_rel("IdentityCompRel", IdentityCompRel)
     .set_attr<FTVMCompute>("FTVMCompute", RELAY_UNARY_COMPUTE(topi::isinf));
 
+// relay.hardmax
+TVM_REGISTER_NODE_TYPE(HardmaxAttrs);
+
+Expr MakeHardmax(Expr data, int axis) {
+  auto attrs = make_object<HardmaxAttrs>();
+  attrs->axis = axis;
+  static const Op& op = Op::Get("hardmax");
+  return Call(op, {data}, Attrs(attrs), {});
+}
+
+TVM_REGISTER_GLOBAL("relay.op._make.hardmax").set_body_typed(MakeHardmax);
+
+RELAY_REGISTER_OP("hardmax")
+    .describe(R"code(The operator computes the hardmax values for the given input.
+)code" TVM_ADD_FILELINE)
+    .set_num_inputs(1)
+    .add_argument("data", "Tensor", "The input tensor.")
+    .set_support_level(5)
+    .add_type_rel("Identity", IdentityRel);
+
 }  // namespace relay
 }  // namespace tvm

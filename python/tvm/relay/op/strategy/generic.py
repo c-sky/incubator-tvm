@@ -1058,6 +1058,29 @@ def nms_strategy(attrs, inputs, out_type, target):
     return strategy
 
 
+# hardmax
+def wrap_compute_hardmax(topi_hardmax):
+    """wrap hardmax topi compute"""
+
+    def _compute_hardmax(attrs, inputs, out_type):
+        axis = attrs.axis
+        return [topi_hardmax(inputs[0], axis)]
+
+    return _compute_hardmax
+
+
+@override_native_generic_func("hardmax_strategy")
+def hardmax_strategy(attrs, inputs, out_type, target):
+    """hardmax generic strategy"""
+    strategy = _op.OpStrategy()
+    strategy.add_implementation(
+        wrap_compute_hardmax(topi.hardmax),
+        wrap_topi_schedule(topi.generic.schedule_hardmax),
+        name="hardmax.generic",
+    )
+    return strategy
+
+
 # roi_align
 def wrap_compute_roi_align(topi_compute):
     """wrap roi_align topi compute"""

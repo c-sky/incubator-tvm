@@ -1285,3 +1285,22 @@ def isinf(data):
         The computed result.
     """
     return _make.isinf(data)
+
+
+def hardmax(data, axis=0):
+    """The operator computes the hardmax values for the given input.
+
+    Parameters
+    ----------
+    data : relay.Expr
+        The input data
+
+    axis : int
+        Must be in the range [-rank(data), rank(data))
+
+    Returns
+    -------
+    result : relay.Expr
+        The computed result.
+    """
+    return _make.hardmax(data, axis)

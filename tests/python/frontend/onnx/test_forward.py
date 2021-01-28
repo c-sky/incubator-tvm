@@ -87,6 +87,7 @@ def get_tvm_output(
             try:
                 m.set_input(input_names[i], tvm.nd.array(input_data[i].astype(input_data[i].dtype)))
             except:
+                print("set input error!!!!!!!!!!!!!!")
                 continue
     else:
         m.set_input(input_names, tvm.nd.array(input_data.astype(input_data.dtype)))
@@ -4140,13 +4141,6 @@ unsupported_onnx_tests = [
     "test_eyelike_populate_off_main_diagonal/",
     "test_eyelike_with_dtype/",
     "test_eyelike_without_dtype/",
-    "test_hardmax_axis_0/",
-    "test_hardmax_axis_1/",
-    "test_hardmax_axis_2/",
-    "test_hardmax_default_axis/",
-    "test_hardmax_example/",
-    "test_hardmax_negative_axis/",
-    "test_hardmax_one_hot/",
     "test_isinf_negative/",
     "test_isinf_positive/",
     "test_lstm_defaults/",
@@ -4279,6 +4273,42 @@ def test_wrong_input():
         relay.frontend.from_onnx(model, shape=wrong_shape_dict)
 
 
+def verify_hardmax(x_shape, axis=None):
+    if axis:
+        kwargs["axis"] = axis
+    node = helper.make_node(
+        "Hardmax",
+        inputs=["x"],
+        outputs=["y"],
+        **kwargs,
+    )
+
+    graph = helper.make_graph(
+        [node],
+        "hardmax_test",
+        inputs=[helper.make_tensor_value_info("x", TensorProto.FLOAT, list(x_shape))],
+        outputs=[helper.make_tensor_value_info("y", TensorProto.FLOAT, list(x_shape))],
+    )
+
+    model = helper.make_model(graph, producer_name="hardmax_test")
+    verify_with_ort(model, [x_shape], x_shape)
+
+
+@tvm.testing.uses_gpu
+def test_hardmax():
+    verify_hardmax(x_shape=[2, 4])
+    verify_hardmax(x_shape=[2, 4], axis=1)
+    verify_hardmax(x_shape=[2, 4], axis=-1)
+    verify_hardmax(x_shape=[3, 5, 4])
+    verify_hardmax(x_shape=[3, 5, 4], axis=0)
+    verify_hardmax(x_shape=[3, 5, 4], axis=1)
+    verify_hardmax(x_shape=[2, 3, 5, 4])
+    verify_hardmax(x_shape=[2, 3, 5, 4], axis=0)
+    verify_hardmax(x_shape=[2, 3, 5, 4], axis=1)
+    verify_hardmax(x_shape=[2, 3, 5, 4], axis=2)
+    verify_hardmax(x_shape=[2, 3, 5, 4], axis=3)
+
+
 if __name__ == "__main__":
     test_flatten()
     test_reshape()
@@ -4358,3 +4388,4 @@ if __name__ == "__main__":
     test_softplus()
     test_cumsum()
     test_wrong_input()
+    test_hardmax()

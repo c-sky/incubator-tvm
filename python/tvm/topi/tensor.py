@@ -18,6 +18,8 @@
 """Elementwise operators"""
 from __future__ import absolute_import as _abs
 from . import cpp
+from .. import te, tir
+from .utils import get_const_tuple, prod
 
 
 def elemwise_sum(xs):
@@ -73,3 +75,69 @@ def full_like(x, fill_value):
         The result.
     """
     return cpp.full_like(x, fill_value)
+
+
+def hardmax(data, axis):
+    """hardmax operator.
+
+    Parameters
+    ----------
+    data : tvm.te.Tensor
+        input data
+
+    Returns
+    -------
+    out : tvm.te.Tensor
+        Tensor with shape same as input data.
+    """
+
+    def _hardmax(data, out_buf, axis):
+
+        ib = tir.ir_builder.create()
+        input_data = ib.buffer_ptr(data)
+        out = ib.buffer_ptr(out_buf)
+        temp = ib.allocate("float32", (1,), name="temp_data", scope="local")
+        temp1 = ib.allocate("int32", (1,), name="temp1_data", scope="local")
+        shape = get_const_tuple(data.shape)
+        if axis.value == -1:
+            axis = len(data.shape) - 1
+        else:
+            axis = axis.value
+        out_size = prod(data.shape)
+
+        with ib.for_range(0, out_size) as i:
+            out[i] = 0.0
+
+        outer_size = 1
+        for i, s in enumerate(shape):
+            if i < axis:
+                outer_size = outer_size * s
+
+        inner_size = 1
+        for i, s in enumerate(shape):
+            if i > axis:
+                inner_size = inner_size * s
+
+        cnt = shape[axis]
+        with ib.for_range(0, outer_size, "i0") as i:
+            with ib.for_range(0, inner_size, "k") as k:
+                temp[0] = -float("inf")
+                temp1[0] = i * inner_size * cnt + k
+                with ib.for_range(0, cnt, "j") as j:
+                    index = i * inner_size * cnt + j * inner_size + k
+                    with ib.if_scope(input_data[index] > temp[0]):
+                        temp1[0] = index
+                        temp[0] = input_data[index]
+
+                out[temp1[0]] = 1.0
+
+        return ib.get()
+
+    out = te.extern(
+        data.shape,
+        [data],
+        lambda ins, outs: _hardmax(ins[0], outs[0], axis),
+        dtype=data.dtype,
+    )
+
+    return out
