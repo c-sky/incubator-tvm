@@ -2095,6 +2095,42 @@ class NonZero(OnnxOpConverter):
         return _op.transpose(output, axes=(1, 0))
 
 
+class SplitToSequence(OnnxOpConverter):
+    """Operator converter for SplitToSequence"""
+
+    @classmethod
+    def _impl_v11(cls, inputs, attr, params):
+        try:
+            indices_or_sections = infer_value(inputs[1], params).asnumpy().tolist()
+        except:
+            raise "Can't find indice or sections."
+        if isinstance(indices_or_sections, int):
+            in_shape = infer_shape(inputs[0])
+            target_dim = in_shape[attr["axis"]]
+            cnt = (
+                int(target_dim / indices_or_sections)
+                if int(target_dim / indices_or_sections) == target_dim / indices_or_sections
+                else int(target_dim / indices_or_sections) + 1
+            )
+            indices_or_sections = [indices_or_sections * (i + 1) for i in range(cnt - 1)]
+        out = _op.split(inputs[0], indices_or_sections, attr["axis"])
+        return _expr.Tuple(list(out))
+
+
+class SequenceAt(OnnxOpConverter):
+    """Operator converter for SequenceAt"""
+
+    @classmethod
+    def _impl_v11(cls, inputs, attr, params):
+        assert isinstance(inputs[0], _expr.Tuple)
+        try:
+            position = infer_value(inputs[1], params).asnumpy().tolist()
+        except:
+            raise "Can't find position."
+
+        return inputs[0][position]
+
+
 class TopK(OnnxOpConverter):
     """Operator converter for TopK"""
 
@@ -2864,6 +2900,8 @@ def _get_convert_map(opset):
         # defs/control_flow
         "Loop": Loop.get_converter(opset),
         "If": If.get_converter(opset),
+        "SplitToSequence": SplitToSequence.get_converter(opset),
+        "SequenceAt": SequenceAt.get_converter(opset),
     }
 
 
