@@ -915,6 +915,20 @@ class Concat(OnnxOpConverter):
         return AttrCvt(op_name="concatenate")((inputs,), args)
 
 
+class ConcatFromSequence(OnnxOpConverter):
+    """Operator converter for Concat."""
+
+    @classmethod
+    def _impl_v11(cls, inputs, attr, params):
+        axis = attr.get("axis")
+        new_axis = attr.get("new_axis")
+        if new_axis:
+            out = AttrCvt(op_name="stack")(inputs, {"axis": axis})
+        else:
+            out = AttrCvt(op_name="concatenate")(inputs, {"axis": axis})
+        return out
+
+
 class Scale(OnnxOpConverter):
     """Operator converter for Scale."""
 
@@ -2095,6 +2109,16 @@ class NonZero(OnnxOpConverter):
         return _op.transpose(output, axes=(1, 0))
 
 
+class SequenceConstruct(OnnxOpConverter):
+    """Operator converter for SequenceConstruct"""
+
+    @classmethod
+    def _impl_v11(cls, inputs, attr, params):
+        if len(inputs) == 1:
+            raise ValueError("Expect 2 or more inputs")
+        return _op.Tuple([x for x in inputs])
+
+
 class TopK(OnnxOpConverter):
     """Operator converter for TopK"""
 
@@ -2834,6 +2858,7 @@ def _get_convert_map(opset):
         "Reshape": Reshape.get_converter(opset),
         "Expand": Expand.get_converter(opset),
         "Concat": Concat.get_converter(opset),
+        "ConcatFromSequence": ConcatFromSequence.get_converter(opset),
         "Split": Split.get_converter(opset),
         "Slice": Slice.get_converter(opset),
         "Transpose": AttrCvt("transpose", {"perm": "axes"}),
@@ -2864,6 +2889,7 @@ def _get_convert_map(opset):
         # defs/control_flow
         "Loop": Loop.get_converter(opset),
         "If": If.get_converter(opset),
+        "SequenceConstruct": SequenceConstruct.get_converter(opset),
     }
 
 
